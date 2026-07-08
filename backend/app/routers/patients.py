@@ -31,3 +31,30 @@ def get_patient(patient_uuid: str, user=Depends(current_user)):
         )
     patient["appointments"] = db.list_appointments_for_patient(patient_uuid)
     return patient
+
+
+@router.get("/{patient_uuid}/context")
+def patient_context(patient_uuid: str, user=Depends(current_user)):
+    """Call-pop timeline: patient + their appointments, calls, communications."""
+    from .. import store_comms
+
+    patient = db.get_patient(patient_uuid)
+    if not patient:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found"
+        )
+
+    appointments = db.list_appointments_for_patient(patient_uuid)
+    calls = [c for c in db.list_calls() if c.get("patient_uuid") == patient_uuid]
+    communications = [
+        c
+        for c in store_comms.list_communications()
+        if c.get("patient_uuid") == patient_uuid
+    ]
+
+    return {
+        "patient": patient,
+        "appointments": appointments,
+        "calls": calls,
+        "communications": communications,
+    }

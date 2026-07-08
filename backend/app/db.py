@@ -35,6 +35,11 @@ def _now() -> str:
     return str(int(time.time()))
 
 
+def clinic_timezone() -> str:
+    """Clinic timezone string (safe default; config.py not required)."""
+    return getattr(settings, "CLINIC_TZ", "America/New_York")
+
+
 # ---------------------------------------------------------------------------
 # Patients
 # ---------------------------------------------------------------------------
@@ -143,16 +148,27 @@ def get_appointment(appointment_id: str) -> Optional[dict]:
         duration = int(raw_duration) if raw_duration not in (None, "") else None
     except (TypeError, ValueError):
         duration = None
+    datetime_str = data.get("datetime")
+    end_time = None
+    if datetime_str and duration is not None:
+        try:
+            from .scheduling import compute_end_datetime
+
+            end_time = compute_end_datetime(datetime_str, duration)
+        except Exception:
+            end_time = None
     return {
         "appointment_id": appointment_id,
         "patient_uuid": data.get("patient_uuid"),
-        "datetime": data.get("datetime"),
+        "datetime": datetime_str,
         "location": data.get("location"),
         "status": data.get("status"),
         "created_at": data.get("created_at"),
         "provider_id": data.get("provider_id") or None,
         "procedure_id": data.get("procedure_id") or None,
         "duration_minutes": duration,
+        "end_time": end_time,
+        "timezone": clinic_timezone(),
     }
 
 

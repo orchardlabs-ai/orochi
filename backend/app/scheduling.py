@@ -7,6 +7,7 @@ module only computes slot boundaries and searches for the next free slot.
 """
 
 from datetime import datetime, timedelta
+from typing import Optional
 
 from .config import settings
 
@@ -57,6 +58,41 @@ def procedure_slot_count(duration_minutes) -> int:
         return 1
     count = (minutes + step - 1) // step
     return max(1, count)
+
+
+def slot_end_time(start_hhmm, duration_minutes) -> Optional[str]:
+    """Return the "HH:MM" end of the booking block that starts at ``start_hhmm``.
+
+    The block spans ``procedure_slot_count(duration_minutes)`` consecutive
+    45-minute slots, so the end is ``start + slot_count * SLOT_MINUTES``.
+    Returns None when the start time can't be parsed or duration is missing.
+    """
+    if not start_hhmm or ":" not in str(start_hhmm):
+        return None
+    try:
+        start_min = _parse_hhmm(str(start_hhmm)[:5])
+    except (ValueError, TypeError):
+        return None
+    count = procedure_slot_count(duration_minutes)
+    end_min = start_min + count * settings.SLOT_MINUTES
+    return f"{(end_min // 60) % 24:02d}:{end_min % 60:02d}"
+
+
+def compute_end_datetime(datetime_str, duration_minutes) -> Optional[str]:
+    """Return the "YYYY-MM-DDThh:mm" end instant for a stored slot datetime.
+
+    None-tolerant: returns None when the datetime or duration is missing or the
+    datetime isn't the expected "YYYY-MM-DDThh:mm" shape.
+    """
+    if not datetime_str or "T" not in str(datetime_str):
+        return None
+    if duration_minutes in (None, ""):
+        return None
+    date_str, _, time_str = str(datetime_str).partition("T")
+    end = slot_end_time(time_str[:5], duration_minutes)
+    if end is None:
+        return None
+    return f"{date_str}T{end}"
 
 
 def next_available_slot(

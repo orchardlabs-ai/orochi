@@ -10,7 +10,10 @@ from .routers import (
     campaigns,
     catalog,
     comms,
+    escalations,
+    insurance,
     patients,
+    reminders,
     schedule,
     simulator,
     waitlist,
@@ -48,4 +51,7 @@ app.include_router(comms.router, prefix="/api")
 app.include_router(waitlist.router, prefix="/api")
 app.include_router(campaigns.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
+app.include_router(escalations.router, prefix="/api")
+app.include_router(reminders.router, prefix="/api")
+app.include_router(insurance.router, prefix="/api")
 app.include_router(simulator.router, prefix="/api")

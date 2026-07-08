@@ -202,6 +202,12 @@ def collect_appointment_details(state: CallState) -> CallState:
 
     spoken_when = _format_spoken(slot_date, slot_time)
     actions.append(f"Created appointment {appointment_id} for {appt_dt} at {location}")
+    appt_end = appointment.get("end_time") if isinstance(appointment, dict) else None
+    if appt_end:
+        actions.append(
+            f"Appointment block ends at {appt_end} "
+            f"({appointment.get('timezone') or 'clinic time'})"
+        )
     transcript.append({
         "role": "agent",
         "text": f"You're booked for {spoken_when} at {location}. See you then!",

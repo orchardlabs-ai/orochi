@@ -1,0 +1,26 @@
+.insurance-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.4rem;
+}
+
+.insurance-badge-ok {
+  background: var(--jade-100);
+  color: var(--jade-deep);
+  border: 1px solid var(--jade-200);
+}
+
+.insurance-badge-bad {
+  background: var(--rose-100);
+  color: var(--rose);
+  border: 1px solid var(--rose);
+}
+
+.insurance-coverage {
+  margin-top: 1rem;
+}
+
+.insurance-inactive-note {
+  margin: 0.8rem 0 0;
+}

@@ -1,0 +1,168 @@
+.demo-page .demo-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* --- Progress rail --- */
+.demo-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 20px;
+}
+
+.demo-progress-step {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+  position: relative;
+  transition: background 0.4s var(--ease);
+}
+
+.demo-progress-step.is-done {
+  background: var(--jade);
+}
+
+.demo-progress-step.is-active {
+  background: var(--jade-200);
+}
+
+.demo-progress-dot {
+  position: absolute;
+  top: -9px;
+  left: -4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+}
+
+.demo-progress-step.is-done .demo-progress-dot,
+.demo-progress-step.is-active .demo-progress-dot {
+  color: #fff;
+  background: var(--jade);
+  border-color: var(--jade);
+}
+
+/* --- Timeline log --- */
+.demo-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.demo-log-item {
+  display: flex;
+  gap: 14px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+
+.demo-log-item:first-child {
+  border-top: none;
+}
+
+.demo-log-marker {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: var(--bg-tint);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+.demo-log-item.status-running .demo-log-marker {
+  background: var(--jade-100);
+  color: var(--jade-deep);
+  border-color: var(--jade-200);
+  animation: demo-spin 1.4s linear infinite;
+}
+
+.demo-log-item.status-done .demo-log-marker {
+  background: var(--jade);
+  color: #fff;
+  border-color: var(--jade);
+}
+
+.demo-log-item.status-skipped .demo-log-marker {
+  background: var(--amber-100);
+  color: var(--amber);
+  border-color: var(--amber-100);
+}
+
+.demo-log-item.status-error .demo-log-marker {
+  background: var(--rose-100);
+  color: var(--rose);
+  border-color: var(--rose-100);
+}
+
+.demo-log-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.demo-log-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.demo-log-title .badge {
+  text-transform: capitalize;
+  font-size: 0.7rem;
+}
+
+.demo-badge-done { background: var(--jade-100); color: var(--jade-deep); }
+.demo-badge-running { background: var(--jade-100); color: var(--jade-deep); }
+.demo-badge-skipped { background: var(--amber-100); color: var(--amber); }
+.demo-badge-error { background: var(--rose-100); color: var(--rose); }
+.demo-badge-pending { background: var(--bg-tint); color: var(--muted); }
+
+.demo-log-detail {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.demo-log-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--jade-deep);
+  text-decoration: none;
+}
+
+.demo-log-link:hover {
+  text-decoration: underline;
+}
+
+.demo-stats {
+  margin-top: 12px;
+}
+
+@keyframes demo-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-log-item.status-running .demo-log-marker { animation: none; }
+}

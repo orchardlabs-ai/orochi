@@ -1,0 +1,51 @@
+.esc-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+  gap: 1.2rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .esc-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.esc-toggle {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.esc-toggle .esc-active {
+  background: var(--jade-100);
+  color: var(--jade-deep);
+}
+
+.esc-row {
+  cursor: pointer;
+}
+
+.esc-row:hover {
+  background: var(--bg-tint);
+}
+
+.esc-selected {
+  background: var(--jade-100);
+}
+
+.esc-summary {
+  max-width: 26ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.esc-reason-emergency {
+  background: var(--rose-100);
+  color: var(--rose);
+}
+
+.esc-pop {
+  position: sticky;
+  top: 1rem;
+}
