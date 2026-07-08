@@ -1,3 +1,118 @@
+/* ---- Category tokens ---- */
+.cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.cat-appointments {
+  background: var(--jade-100);
+  color: var(--jade-deep);
+}
+.cat-engagement {
+  background: var(--sky-100);
+  color: var(--sky);
+}
+.cat-payment {
+  background: var(--amber-100);
+  color: var(--amber);
+}
+.cat-reputation {
+  background: var(--coral-100);
+  color: var(--coral);
+}
+.cat-other {
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+/* ---- Filter chips ---- */
+.cat-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0.25rem;
+}
+.cat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.38rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.18s var(--ease), background 0.18s var(--ease),
+    color 0.18s var(--ease);
+}
+.cat-chip:hover {
+  border-color: var(--line-strong);
+}
+.cat-chip-count {
+  min-width: 1.25rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+}
+.cat-chip.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+.cat-chip.is-active .cat-chip-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: var(--surface);
+}
+.cat-chip-appointments.is-active {
+  background: var(--jade);
+  border-color: var(--jade);
+  color: #fff;
+}
+.cat-chip-engagement.is-active {
+  background: var(--sky);
+  border-color: var(--sky);
+  color: #fff;
+}
+.cat-chip-payment.is-active {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #1a1205;
+}
+.cat-chip-reputation.is-active {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: #fff;
+}
+.cat-chip-other.is-active {
+  background: var(--muted);
+  border-color: var(--muted);
+  color: var(--surface);
+}
+
+/* ---- Section head ---- */
+.cat-section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* ---- Segment grid & cards ---- */
 .campaign-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -13,28 +128,29 @@
   padding: 1.1rem;
 }
 
-.campaign-card-head {
+.campaign-card-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  margin-bottom: 0.55rem;
 }
 
-.campaign-card-head h3 {
+.campaign-title {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.02rem;
   color: var(--ink);
 }
 
 .campaign-desc {
-  margin: 0.6rem 0 0.4rem;
+  margin: 0.5rem 0 0.5rem;
   color: var(--ink-soft);
   font-size: 0.9rem;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .campaign-sample {
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.5rem;
 }
 
 .campaign-result {

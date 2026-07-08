@@ -15,5 +15,10 @@ Captured from the running app (`http://localhost:5173`) with seeded demo data.
 | **Campaigns** — recall / reactivation / missed-call recovery | ![Campaigns](09-campaigns.png) |
 | **Insights** — call analytics, booking conversion, no-show risk | ![Insights](10-insights.png) |
 | **Providers** — providers + procedure types with durations | ![Providers](11-providers.png) |
+| **Escalations** — emergency queue + patient call-pop | ![Escalations](12-escalations.png) |
+| **Reminders** — configurable cadence + due-job runner | ![Reminders](13-reminders.png) |
+| **Insurance** — mock eligibility verification | ![Insurance](14-insurance.png) |
+| **Guided demo** — scripted product walkthrough | ![Guided demo](15-guided-demo.png) |
+| **Dark mode** — theme-aware dashboard | ![Dark mode](16-dark-dashboard.png) |
 
 > Regenerate with `python3 scripts/screenshots.py` (drives headless Chrome via Playwright against the running dev servers).

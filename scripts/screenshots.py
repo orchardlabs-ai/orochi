@@ -65,10 +65,21 @@ with sync_playwright() as p:
         ("campaigns", "09-campaigns"),
         ("insights", "10-insights"),
         ("catalog", "11-providers"),
+        ("escalations", "12-escalations"),
+        ("reminders", "13-reminders"),
+        ("insurance", "14-insurance"),
+        ("demo", "15-guided-demo"),
     ]:
         page.goto(f"{BASE}/{slug}", wait_until="networkidle")
         page.wait_for_timeout(800)
         page.screenshot(path=f"{OUT}/{name}.png", full_page=True)
+
+    # Dark mode — set the persisted theme, then capture the dashboard
+    dark = ctx.new_page()
+    dark.add_init_script("localStorage.setItem('orochi-theme','dark')")
+    dark.goto(f"{BASE}/", wait_until="networkidle")
+    dark.wait_for_timeout(900)
+    dark.screenshot(path=f"{OUT}/16-dark-dashboard.png", full_page=True)
 
     browser.close()
     print("done")
