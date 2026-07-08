@@ -1,6 +1,6 @@
 services:
   dragonfly:
-    image: dragonflydb/dragonfly
+    image: ghcr.io/dragonflydb/dragonfly:latest
     container_name: orochi-dragonfly
     ports:
       - "6379:6379"
@@ -28,6 +28,9 @@ services:
     container_name: orochi-frontend
     ports:
       - "5173:5173"
+    environment:
+      # Vite preview proxies /api to the backend service inside the compose network.
+      BACKEND_URL: http://backend:8000
     depends_on:
       - backend
     restart: unless-stopped
