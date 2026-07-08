@@ -2,11 +2,11 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth';
 
 const nav = [
-  { to: '/', label: 'Dashboard', icon: '📊', end: true },
-  { to: '/patients', label: 'Patients', icon: '🧑‍⚕️' },
-  { to: '/appointments', label: 'Appointments', icon: '📅' },
-  { to: '/calls', label: 'Calls', icon: '📞' },
-  { to: '/simulator', label: 'Simulator', icon: '🧪' },
+  { to: '/', label: 'Dashboard', icon: '◍', end: true },
+  { to: '/patients', label: 'Patients', icon: '❑' },
+  { to: '/appointments', label: 'Appointments', icon: '❖' },
+  { to: '/calls', label: 'Calls', icon: '◈' },
+  { to: '/simulator', label: 'Simulator', icon: '⟐' },
 ];
 
 export default function Layout() {
@@ -20,32 +20,31 @@ export default function Layout() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <header className="topbar">
         <div className="brand">
           <span className="brand-mark" aria-hidden="true">🐉</span>
-          <div>
-            <div className="brand-name">Orochi</div>
-            <div className="brand-sub">Clinic Voice Agent</div>
+          <div className="brand-text">
+            <span className="brand-name">Orochi</span>
+            <span className="brand-sub">Clinic Voice Agent</span>
           </div>
         </div>
 
-        <nav className="nav">
+        <nav className="tabs" role="tablist" aria-label="Primary">
           {nav.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
-              className={({ isActive }) =>
-                'nav-link' + (isActive ? ' active' : '')
-              }
+              role="tab"
+              className={({ isActive }) => 'tab' + (isActive ? ' active' : '')}
             >
-              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
-              <span>{item.label}</span>
+              <span className="tab-icon" aria-hidden="true">{item.icon}</span>
+              <span className="tab-label">{item.label}</span>
             </NavLink>
           ))}
         </nav>
 
-        <div className="sidebar-footer">
+        <div className="topbar-user">
           <div className="user-chip">
             <div className="avatar" aria-hidden="true">
               {user?.email.charAt(0).toUpperCase()}
@@ -55,14 +54,16 @@ export default function Layout() {
               <div className="user-role">Administrator</div>
             </div>
           </div>
-          <button className="btn btn-ghost btn-block" onClick={handleLogout}>
+          <button className="btn btn-ghost" onClick={handleLogout}>
             Sign out
           </button>
         </div>
-      </aside>
+      </header>
 
       <main className="content">
-        <Outlet />
+        <div className="content-inner">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
