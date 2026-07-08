@@ -8,7 +8,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        // Use 127.0.0.1 (not "localhost") so macOS IPv6 resolution can't
+        // route the proxy to some other service squatting on [::1]:8000.
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         cookieDomainRewrite: '',
       },
@@ -19,7 +21,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: process.env.BACKEND_URL || 'http://localhost:8000',
+        target: process.env.BACKEND_URL || 'http://127.0.0.1:8000',
         changeOrigin: true,
         cookieDomainRewrite: '',
       },
