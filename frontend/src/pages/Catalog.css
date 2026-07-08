@@ -1,0 +1,24 @@
+.catalog-swatch-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.catalog-swatch {
+  display: inline-block;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  flex-shrink: 0;
+}
+
+.catalog-color {
+  padding: 0;
+  height: 2.3rem;
+  width: 3rem;
+  cursor: pointer;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}

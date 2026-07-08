@@ -64,6 +64,7 @@ with sync_playwright() as p:
         ("communications", "08-communications"),
         ("campaigns", "09-campaigns"),
         ("insights", "10-insights"),
+        ("catalog", "11-providers"),
     ]:
         page.goto(f"{BASE}/{slug}", wait_until="networkidle")
         page.wait_for_timeout(800)

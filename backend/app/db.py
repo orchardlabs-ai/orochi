@@ -104,7 +104,13 @@ def list_patients() -> list:
 # Appointments
 # ---------------------------------------------------------------------------
 def create_appointment(
-    patient_uuid: str, datetime_str: str, location: str, status: str = "scheduled"
+    patient_uuid: str,
+    datetime_str: str,
+    location: str,
+    status: str = "scheduled",
+    provider_id: Optional[str] = None,
+    procedure_id: Optional[str] = None,
+    duration_minutes: Optional[int] = None,
 ) -> dict:
     r = get_redis()
     appointment_id = str(uuid.uuid4())
@@ -117,6 +123,9 @@ def create_appointment(
             "location": location,
             "status": status,
             "created_at": created_at,
+            "provider_id": provider_id or "",
+            "procedure_id": procedure_id or "",
+            "duration_minutes": "" if duration_minutes is None else int(duration_minutes),
         },
     )
     r.rpush(f"appointments_by_patient:{patient_uuid}", appointment_id)
@@ -129,6 +138,11 @@ def get_appointment(appointment_id: str) -> Optional[dict]:
     data = r.hgetall(f"appointment:{appointment_id}")
     if not data:
         return None
+    raw_duration = data.get("duration_minutes")
+    try:
+        duration = int(raw_duration) if raw_duration not in (None, "") else None
+    except (TypeError, ValueError):
+        duration = None
     return {
         "appointment_id": appointment_id,
         "patient_uuid": data.get("patient_uuid"),
@@ -136,6 +150,9 @@ def get_appointment(appointment_id: str) -> Optional[dict]:
         "location": data.get("location"),
         "status": data.get("status"),
         "created_at": data.get("created_at"),
+        "provider_id": data.get("provider_id") or None,
+        "procedure_id": data.get("procedure_id") or None,
+        "duration_minutes": duration,
     }
 
 
@@ -157,9 +174,33 @@ def list_appointments() -> list:
             continue
         patient = get_patient(appt["patient_uuid"])
         appt["patient_name"] = patient["name"] if patient else None
+        _enrich_appointment(appt)
         appointments.append(appt)
     appointments.sort(key=lambda a: a.get("datetime", ""))
     return appointments
+
+
+def _enrich_appointment(appt: dict) -> dict:
+    """Add provider_name / procedure_name (None-tolerant) to an appointment dict."""
+    from . import store_catalog
+
+    provider_name = None
+    procedure_name = None
+    if appt.get("provider_id"):
+        try:
+            provider = store_catalog.get_provider(appt["provider_id"])
+            provider_name = provider["name"] if provider else None
+        except Exception:
+            provider_name = None
+    if appt.get("procedure_id"):
+        try:
+            procedure = store_catalog.get_procedure(appt["procedure_id"])
+            procedure_name = procedure["name"] if procedure else None
+        except Exception:
+            procedure_name = None
+    appt["provider_name"] = provider_name
+    appt["procedure_name"] = procedure_name
+    return appt
 
 
 def list_upcoming_appointments() -> list:
@@ -298,18 +339,24 @@ def user_exists(email: str) -> bool:
 # ---------------------------------------------------------------------------
 # Schedule availability (weekly recurring template)
 # ---------------------------------------------------------------------------
-# Stored as a Redis set "schedule:availability" whose members are
-# "{weekday}:{HH:MM}" (e.g. "mon:09:30") for every slot open for bookings.
+# PER-PROVIDER availability: Redis set "schedule:availability:{provider_id}"
+# whose members are "{weekday}:{HH:MM}" (e.g. "mon:09:30") for every slot open
+# for that provider. The old global set "schedule:availability" is deprecated
+# but kept readable for legacy fallback (is_slot_available_global).
 _AVAILABILITY_KEY = "schedule:availability"
 
 
-def get_availability() -> dict:
-    """Return the weekly template as {weekday: [sorted HH:MM, ...]}."""
+def _provider_availability_key(provider_id: str) -> str:
+    return f"schedule:availability:{provider_id}"
+
+
+def get_availability(provider_id: str) -> dict:
+    """Return one provider's weekly template as {weekday: [sorted HH:MM, ...]}."""
     from .scheduling import WEEKDAYS
 
     r = get_redis()
     result = {day: [] for day in WEEKDAYS}
-    for member in r.smembers(_AVAILABILITY_KEY):
+    for member in r.smembers(_provider_availability_key(provider_id)):
         weekday, _, time = member.partition(":")
         if weekday in result:
             result[weekday].append(time)
@@ -318,32 +365,44 @@ def get_availability() -> dict:
     return result
 
 
-def is_slot_available(weekday: str, time: str) -> bool:
+def is_slot_available(provider_id: str, weekday: str, time: str) -> bool:
     r = get_redis()
-    return bool(r.sismember(_AVAILABILITY_KEY, f"{weekday}:{time}"))
+    return bool(
+        r.sismember(_provider_availability_key(provider_id), f"{weekday}:{time}")
+    )
 
 
-def set_slot_availability(weekday: str, time: str, available: bool) -> dict:
+def set_slot_availability(
+    provider_id: str, weekday: str, time: str, available: bool
+) -> dict:
     r = get_redis()
     member = f"{weekday}:{time}"
+    key = _provider_availability_key(provider_id)
     if available:
-        r.sadd(_AVAILABILITY_KEY, member)
+        r.sadd(key, member)
     else:
-        r.srem(_AVAILABILITY_KEY, member)
-    return get_availability()
+        r.srem(key, member)
+    return get_availability(provider_id)
 
 
-def set_day_availability(weekday: str, available: bool) -> dict:
-    """Toggle an entire weekday column across all slot times."""
+def set_day_availability(provider_id: str, weekday: str, available: bool) -> dict:
+    """Toggle an entire weekday column across all slot times for one provider."""
     from .scheduling import slot_times
 
     r = get_redis()
+    key = _provider_availability_key(provider_id)
     members = [f"{weekday}:{t}" for t in slot_times()]
     if available:
-        r.sadd(_AVAILABILITY_KEY, *members)
+        r.sadd(key, *members)
     else:
-        r.srem(_AVAILABILITY_KEY, *members)
-    return get_availability()
+        r.srem(key, *members)
+    return get_availability(provider_id)
+
+
+# --- Legacy global availability (deprecated; read-only fallback) ------------
+def is_slot_available_global(weekday: str, time: str) -> bool:
+    r = get_redis()
+    return bool(r.sismember(_AVAILABILITY_KEY, f"{weekday}:{time}"))
 
 
 def availability_is_empty() -> bool:
@@ -351,10 +410,62 @@ def availability_is_empty() -> bool:
     return r.scard(_AVAILABILITY_KEY) == 0
 
 
+def ensure_provider_availability_seeded() -> None:
+    """Seed Mon-Fri, all slots, for any provider whose availability set is empty."""
+    from .scheduling import slot_times, WEEKDAYS
+    from .store_catalog import list_providers, ensure_seeded
+
+    ensure_seeded()
+    r = get_redis()
+    open_days = WEEKDAYS[:5]
+    times = slot_times()
+    for provider in list_providers():
+        pid = provider["provider_id"]
+        key = _provider_availability_key(pid)
+        if r.scard(key) == 0:
+            members = [f"{wd}:{t}" for wd in open_days for t in times]
+            if members:
+                r.sadd(key, *members)
+
+
 def booked_slot_datetimes() -> set:
-    """Datetimes ("YYYY-MM-DDThh:mm") of active (non-cancelled) appointments."""
+    """Datetimes ("YYYY-MM-DDThh:mm") of active (non-cancelled) appointments.
+
+    Kept for backward compatibility (does not expand across durations)."""
     return {
         appt["datetime"]
         for appt in list_appointments()
         if appt.get("datetime") and appt.get("status") != "cancelled"
     }
+
+
+def booked_slots_for_provider(provider_id: str) -> set:
+    """All "YYYY-MM-DDThh:mm" slot-instants occupied by one provider's active
+    appointments, expanded across each appointment's duration."""
+    from datetime import datetime, timedelta
+
+    from .scheduling import slot_times, procedure_slot_count
+
+    slots = slot_times()
+    slot_index = {t: i for i, t in enumerate(slots)}
+    occupied = set()
+
+    for appt in list_appointments():
+        if appt.get("status") == "cancelled":
+            continue
+        if appt.get("provider_id") != provider_id:
+            continue
+        dt = appt.get("datetime")
+        if not dt or "T" not in dt:
+            continue
+        date_str, _, time_str = dt.partition("T")
+        time_str = time_str[:5]
+        count = procedure_slot_count(appt.get("duration_minutes") or 0)
+        start_idx = slot_index.get(time_str)
+        if start_idx is None:
+            # Off-grid start; just occupy the literal instant.
+            occupied.add(f"{date_str}T{time_str}")
+            continue
+        for i in range(start_idx, min(start_idx + count, len(slots))):
+            occupied.add(f"{date_str}T{slots[i]}")
+    return occupied

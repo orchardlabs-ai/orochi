@@ -8,6 +8,7 @@ from .routers import (
     auth,
     calls,
     campaigns,
+    catalog,
     comms,
     patients,
     schedule,
@@ -42,6 +43,7 @@ app.include_router(patients.router, prefix="/api")
 app.include_router(appointments.router, prefix="/api")
 app.include_router(calls.router, prefix="/api")
 app.include_router(schedule.router, prefix="/api")
+app.include_router(catalog.router, prefix="/api")
 app.include_router(comms.router, prefix="/api")
 app.include_router(waitlist.router, prefix="/api")
 app.include_router(campaigns.router, prefix="/api")

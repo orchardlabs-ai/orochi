@@ -121,6 +121,7 @@ def collect_appointment_details(state: CallState) -> CallState:
     """Extract {date,time,location}, snap to a slot, and persist an appointment."""
     from app import db
     from app import scheduling
+    from app import store_catalog
 
     actions = list(state.get("actions", []))
     transcript = list(state.get("transcript", []))
@@ -133,7 +134,28 @@ def collect_appointment_details(state: CallState) -> CallState:
 
     actions.append(f"LLM extracted appointment details: {json.dumps(details)}")
 
-    slot = scheduling.next_available_slot(date, time)
+    # Ensure providers/procedures + per-provider availability exist, then pick
+    # a DEFAULT provider (first) and DEFAULT procedure ("Checkup", else first).
+    db.ensure_provider_availability_seeded()
+    providers = store_catalog.list_providers()
+    procedures = store_catalog.list_procedures()
+    provider = providers[0] if providers else None
+    procedure = None
+    for p in procedures:
+        if (p.get("name") or "").lower() == "checkup":
+            procedure = p
+            break
+    if procedure is None and procedures:
+        procedure = procedures[0]
+
+    provider_id = provider["provider_id"] if provider else None
+    procedure_id = procedure["procedure_id"] if procedure else None
+    duration_minutes = procedure["duration_minutes"] if procedure else None
+    slot_count = scheduling.procedure_slot_count(duration_minutes or 0)
+
+    slot = scheduling.next_available_slot(
+        date, time, provider_id=provider_id, procedure_slots=slot_count
+    )
     requested = _combine_datetime(date, time)
 
     if slot is None:
@@ -157,11 +179,25 @@ def collect_appointment_details(state: CallState) -> CallState:
             f"Requested '{requested}' → offered nearest available slot {appt_dt}"
         )
 
-    appointment = db.create_appointment(state.get("patient_uuid"), appt_dt, location)
+    appointment = db.create_appointment(
+        state.get("patient_uuid"),
+        appt_dt,
+        location,
+        provider_id=provider_id,
+        procedure_id=procedure_id,
+        duration_minutes=duration_minutes,
+    )
     appointment_id = (
         appointment.get("appointment_id")
         or appointment.get("id")
         or appointment.get("uuid")
+    )
+
+    provider_name = provider["name"] if provider else "our team"
+    procedure_name = procedure["name"] if procedure else "appointment"
+    actions.append(
+        f"Assigned provider {provider_name} for a {procedure_name} "
+        f"({duration_minutes or 45} min)"
     )
 
     spoken_when = _format_spoken(slot_date, slot_time)

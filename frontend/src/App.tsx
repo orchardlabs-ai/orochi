@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Schedule from './pages/Schedule';
+import Catalog from './pages/Catalog';
 import Waitlist from './pages/Waitlist';
 import Patients from './pages/Patients';
 import Appointments from './pages/Appointments';
@@ -26,6 +27,7 @@ export default function App() {
       >
         <Route path="/" element={<Dashboard />} />
         <Route path="/schedule" element={<Schedule />} />
+        <Route path="/catalog" element={<Catalog />} />
         <Route path="/waitlist" element={<Waitlist />} />
         <Route path="/patients" element={<Patients />} />
         <Route path="/appointments" element={<Appointments />} />
