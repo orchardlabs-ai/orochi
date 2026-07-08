@@ -1,0 +1,79 @@
+.comm-body-field {
+  flex: 1 1 240px;
+  min-width: 200px;
+}
+
+.comm-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.comm-confirm .field {
+  flex: 1 1 320px;
+  min-width: 240px;
+}
+
+.comm-confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.comm-result {
+  margin-top: 1rem;
+}
+
+.comm-msg {
+  max-width: 32ch;
+  white-space: normal;
+}
+
+/* Channel badges */
+.comm-channel {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+}
+
+.comm-channel-sms {
+  background: var(--sky-100);
+  color: var(--sky);
+}
+
+.comm-channel-email {
+  background: var(--amber-100);
+  color: var(--coral);
+}
+
+.comm-channel-voice {
+  background: var(--jade-100);
+  color: var(--jade-deep);
+}
+
+/* Direction badges (fallbacks if globals absent) */
+.badge-inbound {
+  background: var(--jade-100);
+  color: var(--jade-deep);
+}
+
+.badge-outbound {
+  background: var(--sky-100);
+  color: var(--sky);
+}
+
+/* Status badges inside the confirmation result */
+.badge.status-scheduled {
+  background: var(--sky-100);
+  color: var(--sky);
+}
+
+.badge.status-confirmed {
+  background: var(--jade-100);
+  color: var(--jade-deep);
+}
+
+.badge.status-cancelled {
+  background: var(--rose-100);
+  color: var(--rose);
+}

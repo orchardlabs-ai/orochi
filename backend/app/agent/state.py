@@ -32,3 +32,11 @@ class CallState(TypedDict, total=False):
     actions: List[str]
     transcript: List[dict]
     message: str
+
+    # --- AI brain upgrades ---
+    language: str          # "en" | "es"
+    sentiment: str         # "positive" | "neutral" | "negative"
+    summary: str           # one-line post-call summary
+    escalated: bool        # True when the call was escalated (emergency)
+    emergency: bool        # True when emergency language was detected
+    faq_answer: Optional[str]  # KB answer for hours/insurance/FAQ intents

@@ -4,9 +4,13 @@ import { useAuth } from '../auth';
 const nav = [
   { to: '/', label: 'Dashboard', icon: '◍', end: true },
   { to: '/schedule', label: 'Schedule', icon: '▦' },
+  { to: '/waitlist', label: 'Waitlist', icon: '☰' },
   { to: '/patients', label: 'Patients', icon: '❑' },
   { to: '/appointments', label: 'Appointments', icon: '❖' },
+  { to: '/communications', label: 'Messages', icon: '✉' },
+  { to: '/campaigns', label: 'Campaigns', icon: '⇲' },
   { to: '/calls', label: 'Calls', icon: '◈' },
+  { to: '/insights', label: 'Insights', icon: '◑' },
   { to: '/simulator', label: 'Simulator', icon: '⟐' },
 ];
 

@@ -1,31 +1,17 @@
 """LangGraph wiring for the Orochi clinic voice agent.
 
-Two flows share one graph, routed by ``state["intent"]`` via
-``add_conditional_edges`` (per the contract — NOT set_router):
+One graph, routed by ``state["intent"]`` via ``add_conditional_edges``:
 
-    intent == "create_appointment":
-        entry -> identify_patient -> collect_appointment_details -> END
-    intent == "reminder_flow":
-        entry -> reminder_script -> END
+    intent == "book":        entry -> identify_patient -> collect_appointment_details -> END
+    intent == "reschedule":  entry -> identify_patient -> reschedule_appointment    -> END
+    intent == "cancel":      entry -> identify_patient -> cancel_appointment        -> END
+    intent in (hours,insurance,other): entry -> faq_node -> END
+    intent == "emergency":   entry -> triage_emergency -> END
+    intent == "reminder_flow": entry -> reminder_script -> END
 
-Node functions call storage helpers from ``app.db`` and the LLM via
-``app.agent.llm.kimi_chat``.
-
-STORAGE ASSUMPTIONS (documented for backend-core):
-    The nodes rely on the following helper names in ``app.db``. If backend-core
-    named them differently, add thin aliases there:
-
-        create_or_get_patient(phone, name)  -> patient dict incl. "patient_uuid"
-        create_appointment(patient_uuid, datetime, location) -> appointment dict incl. "appointment_id"
-        list_upcoming_appointments() -> list of appointment dicts (each with
-            "appointment_id", "patient_uuid", "datetime", "location",
-            and optionally "patient_name"/"phone")
-        create_call(patient_uuid, direction, status, ...) -> call dict incl. "call_uuid"
-        update_call(call_uuid, **fields) -> updated call dict
-        get_patient(patient_uuid) -> patient dict  (optional; used to enrich reminders)
-
-    All db helpers are imported lazily inside the nodes so this module imports
-    cleanly even before backend-core finishes app.db.
+Node functions call storage helpers from ``app.db``, scheduling from
+``app.scheduling``, NLU from ``app.agent.nlu``, and the KB from
+``app.knowledge``. All imports of app.db are lazy so this module imports cleanly.
 """
 
 from __future__ import annotations
@@ -38,6 +24,8 @@ from langgraph.graph import StateGraph, END
 
 from .state import CallState
 from .llm import kimi_chat, parse_appointment_json
+from . import nlu
+from .. import knowledge
 
 
 def _now_iso() -> str:
@@ -45,19 +33,13 @@ def _now_iso() -> str:
 
 
 def _combine_datetime(date: str, time: str) -> str:
-    """Combine a date + time into an ISO-ish datetime string.
-
-    ``date`` may be a literal like "next available"; in that case we keep it
-    human-readable rather than fabricating a timestamp.
-    """
     if not date or date == "next available":
         return f"next available {time}".strip()
     return f"{date}T{time}" if time else date
 
 
 def _format_spoken(date_str: str, time_str: str) -> str:
-    """Human-friendly time for the patient-facing transcript, e.g.
-    "Tuesday, July 09 at 11:00 AM". Never exposes slot mechanics."""
+    """Human-friendly time, e.g. "Tuesday, July 09 at 11:00 AM"."""
     try:
         dt = datetime.strptime(f"{date_str}T{time_str}", "%Y-%m-%dT%H:%M")
     except (ValueError, TypeError):
@@ -67,13 +49,49 @@ def _format_spoken(date_str: str, time_str: str) -> str:
     return f"{dt.strftime('%A, %B %d')} at {hour}:{dt.minute:02d} {meridiem}"
 
 
+def _format_dt_string(dt_str: str) -> str:
+    """Format a stored 'YYYY-MM-DDThh:mm' datetime for speech, tolerant of junk."""
+    if not dt_str:
+        return "your appointment"
+    if "T" in dt_str:
+        date_part, _, time_part = dt_str.partition("T")
+        return _format_spoken(date_part, time_part[:5])
+    return dt_str
+
+
+def _extract_requested(message: str) -> dict:
+    """Run the LLM (or offline stub) to pull {date,time,location} from a message."""
+    system = (
+        "You are a clinic scheduling assistant. Extract the requested "
+        "appointment date, time and clinic location from the caller's message. "
+        "Respond ONLY with a JSON object with keys \"date\" (YYYY-MM-DD or "
+        "'next available'), \"time\" (HH:MM 24h) and \"location\"."
+    )
+    raw = kimi_chat(
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": message or ""},
+        ]
+    )
+    return parse_appointment_json(raw)
+
+
+def _next_active_appointment(patient_uuid: str) -> Optional[dict]:
+    """Return the caller's soonest non-cancelled appointment, or None."""
+    from app import db
+
+    appts = db.list_appointments_for_patient(patient_uuid) or []
+    active = [a for a in appts if a.get("status") != "cancelled"]
+    return active[0] if active else None
+
+
 # ---------------------------------------------------------------------------
 # Nodes
 # ---------------------------------------------------------------------------
 
 def identify_patient(state: CallState) -> CallState:
     """Resolve (or create) the patient record for the caller."""
-    from app import db  # lazy import — backend-core owns app.db
+    from app import db
 
     actions = list(state.get("actions", []))
     transcript = list(state.get("transcript", []))
@@ -100,38 +118,21 @@ def identify_patient(state: CallState) -> CallState:
 
 
 def collect_appointment_details(state: CallState) -> CallState:
-    """Ask the LLM to extract {date,time,location} then persist an appointment."""
-    from app import db  # lazy import
+    """Extract {date,time,location}, snap to a slot, and persist an appointment."""
+    from app import db
+    from app import scheduling
 
     actions = list(state.get("actions", []))
     transcript = list(state.get("transcript", []))
     message = state.get("message", "")
 
-    system = (
-        "You are a clinic scheduling assistant. Extract the requested "
-        "appointment date, time and clinic location from the caller's message. "
-        "Respond ONLY with a JSON object with keys \"date\" (YYYY-MM-DD or "
-        "'next available'), \"time\" (HH:MM 24h) and \"location\"."
-    )
-    llm_messages = [
-        {"role": "system", "content": system},
-        {"role": "user", "content": message},
-    ]
-    raw = kimi_chat(llm_messages)
-    details = parse_appointment_json(raw)
-
-    from app import scheduling  # lazy import — shares slot rules with the router
-
+    details = _extract_requested(message)
     date = details.get("date", "next available")
     time = details.get("time", "09:00")
     location = details.get("location", "Main Clinic")
 
-    # The caller's opening message is already seeded into the transcript by
-    # run_inbound; don't append it again here.
     actions.append(f"LLM extracted appointment details: {json.dumps(details)}")
 
-    # Snap the request to the nearest available, unbooked 45-minute slot. Slots
-    # are an internal concept — the caller only ever hears the confirmed time.
     slot = scheduling.next_available_slot(date, time)
     requested = _combine_datetime(date, time)
 
@@ -164,9 +165,7 @@ def collect_appointment_details(state: CallState) -> CallState:
     )
 
     spoken_when = _format_spoken(slot_date, slot_time)
-    actions.append(
-        f"Created appointment {appointment_id} for {appt_dt} at {location}"
-    )
+    actions.append(f"Created appointment {appointment_id} for {appt_dt} at {location}")
     transcript.append({
         "role": "agent",
         "text": f"You're booked for {spoken_when} at {location}. See you then!",
@@ -175,6 +174,151 @@ def collect_appointment_details(state: CallState) -> CallState:
     return {
         **state,
         "appointment_id": appointment_id,
+        "actions": actions,
+        "transcript": transcript,
+    }
+
+
+def reschedule_appointment(state: CallState) -> CallState:
+    """Move the caller's next active appointment to the newly requested time."""
+    from app import db
+    from app import scheduling
+
+    actions = list(state.get("actions", []))
+    transcript = list(state.get("transcript", []))
+    message = state.get("message", "")
+
+    appt = _next_active_appointment(state.get("patient_uuid"))
+    if not appt:
+        actions.append("No active appointment found to reschedule.")
+        transcript.append({
+            "role": "agent",
+            "text": (
+                "I don't see an upcoming appointment on your record to move. "
+                "Would you like to book a new one?"
+            ),
+        })
+        return {**state, "actions": actions, "transcript": transcript}
+
+    appt_id = appt["appointment_id"]
+    old_dt = appt.get("datetime", "")
+    location = appt.get("location", "Main Clinic")
+
+    details = _extract_requested(message)
+    date = details.get("date", "next available")
+    time = details.get("time", "09:00")
+    actions.append(f"Reschedule request parsed: {json.dumps(details)}")
+
+    slot = scheduling.next_available_slot(date, time)
+    if slot is None:
+        actions.append("No available slot found for the requested new time.")
+        transcript.append({
+            "role": "agent",
+            "text": (
+                "I'm sorry, I couldn't find an opening near that time. "
+                "Please call back and we'll keep looking."
+            ),
+        })
+        return {**state, "actions": actions, "transcript": transcript}
+
+    slot_date, slot_time = slot
+    new_dt = f"{slot_date}T{slot_time}"
+
+    r = db.get_redis()
+    r.hset(f"appointment:{appt_id}", "datetime", new_dt)
+
+    actions.append(
+        f"Rescheduled appointment {appt_id}: {old_dt or 'unknown'} → {new_dt}"
+    )
+    transcript.append({
+        "role": "agent",
+        "text": (
+            f"Done — I've moved your appointment from {_format_dt_string(old_dt)} "
+            f"to {_format_spoken(slot_date, slot_time)} at {location}. See you then!"
+        ),
+    })
+
+    return {
+        **state,
+        "appointment_id": appt_id,
+        "actions": actions,
+        "transcript": transcript,
+    }
+
+
+def cancel_appointment(state: CallState) -> CallState:
+    """Cancel the caller's next active appointment."""
+    from app import db
+
+    actions = list(state.get("actions", []))
+    transcript = list(state.get("transcript", []))
+
+    appt = _next_active_appointment(state.get("patient_uuid"))
+    if not appt:
+        actions.append("No active appointment found to cancel.")
+        transcript.append({
+            "role": "agent",
+            "text": "I don't see an upcoming appointment to cancel on your record.",
+        })
+        return {**state, "actions": actions, "transcript": transcript}
+
+    appt_id = appt["appointment_id"]
+    db.update_appointment_status(appt_id, "cancelled")
+
+    actions.append(f"Cancelled appointment {appt_id}")
+    transcript.append({
+        "role": "agent",
+        "text": (
+            f"I've cancelled your appointment on {_format_dt_string(appt.get('datetime'))}. "
+            "Feel free to call back anytime to rebook. Take care!"
+        ),
+    })
+
+    return {
+        **state,
+        "appointment_id": appt_id,
+        "actions": actions,
+        "transcript": transcript,
+    }
+
+
+def faq_node(state: CallState) -> CallState:
+    """Answer an FAQ (hours / insurance / general) from the clinic KB."""
+    actions = list(state.get("actions", []))
+    transcript = list(state.get("transcript", []))
+    message = state.get("message", "")
+
+    ans = knowledge.answer(message)
+    actions.append(f"Answered FAQ from knowledge base (intent={state.get('intent')})")
+    transcript.append({"role": "agent", "text": ans})
+
+    return {
+        **state,
+        "faq_answer": ans,
+        "actions": actions,
+        "transcript": transcript,
+    }
+
+
+def triage_emergency(state: CallState) -> CallState:
+    """Dental-emergency triage: escalate to the on-call provider, do NOT book."""
+    actions = list(state.get("actions", []))
+    transcript = list(state.get("transcript", []))
+
+    actions.append("URGENT: dental emergency detected — escalating to on-call provider.")
+    actions.append("Booking suppressed; no appointment created for emergency call.")
+    transcript.append({
+        "role": "agent",
+        "text": (
+            "This sounds like a dental emergency. I'm connecting you with our "
+            "on-call provider right now — please stay on the line and don't hang up."
+        ),
+    })
+
+    return {
+        **state,
+        "escalated": True,
+        "emergency": True,
         "actions": actions,
         "transcript": transcript,
     }
@@ -197,11 +341,7 @@ def reminder_script(state: CallState) -> CallState:
     actions.append(f"Generated reminder script for {name}")
     transcript.append({"role": "agent", "text": script})
 
-    return {
-        **state,
-        "actions": actions,
-        "transcript": transcript,
-    }
+    return {**state, "actions": actions, "transcript": transcript}
 
 
 # ---------------------------------------------------------------------------
@@ -209,49 +349,78 @@ def reminder_script(state: CallState) -> CallState:
 # ---------------------------------------------------------------------------
 
 def _route_intent(state: CallState) -> str:
-    """Conditional-edge selector from the virtual entry router."""
-    if state.get("intent") == "reminder_flow":
+    intent = state.get("intent")
+    if intent == "reminder_flow":
         return "reminder_flow"
-    return "create_appointment"
+    if intent == "emergency":
+        return "emergency"
+    if intent == "reschedule":
+        return "reschedule"
+    if intent == "cancel":
+        return "cancel"
+    if intent in ("hours", "insurance", "other"):
+        return "faq"
+    return "book"
 
 
 def _entry(state: CallState) -> CallState:
-    """No-op entry node; exists so add_conditional_edges has a source."""
     return state
 
 
 def build_graph():
-    """Construct and compile the Orochi LangGraph."""
     graph = StateGraph(CallState)
 
     graph.add_node("entry", _entry)
     graph.add_node("identify_patient", identify_patient)
     graph.add_node("collect_appointment_details", collect_appointment_details)
+    graph.add_node("reschedule_appointment", reschedule_appointment)
+    graph.add_node("cancel_appointment", cancel_appointment)
+    graph.add_node("faq_node", faq_node)
+    graph.add_node("triage_emergency", triage_emergency)
     graph.add_node("reminder_script", reminder_script)
+    # Second identify node for reschedule/cancel branches (a node can't have two
+    # inbound conditional targets with different successors, so we reuse one
+    # identify node and branch after it).
+    graph.add_node("identify_for_change", identify_patient)
 
     graph.set_entry_point("entry")
 
-    # Contract: use add_conditional_edges (NOT set_router) for routing.
     graph.add_conditional_edges(
         "entry",
         _route_intent,
         {
-            "create_appointment": "identify_patient",
+            "book": "identify_patient",
+            "reschedule": "identify_for_change",
+            "cancel": "identify_for_change",
+            "faq": "faq_node",
+            "emergency": "triage_emergency",
             "reminder_flow": "reminder_script",
         },
     )
 
-    # create_appointment: identify -> collect -> END
+    # book: identify -> collect -> END
     graph.add_edge("identify_patient", "collect_appointment_details")
     graph.add_edge("collect_appointment_details", END)
 
-    # reminder_flow: reminder_script -> END
+    # reschedule / cancel share identify_for_change, then branch by intent.
+    graph.add_conditional_edges(
+        "identify_for_change",
+        lambda s: "cancel" if s.get("intent") == "cancel" else "reschedule",
+        {
+            "reschedule": "reschedule_appointment",
+            "cancel": "cancel_appointment",
+        },
+    )
+    graph.add_edge("reschedule_appointment", END)
+    graph.add_edge("cancel_appointment", END)
+
+    graph.add_edge("faq_node", END)
+    graph.add_edge("triage_emergency", END)
     graph.add_edge("reminder_script", END)
 
     return graph.compile()
 
 
-# Compile once at import so callers reuse a single graph instance.
 _COMPILED_GRAPH = None
 
 
@@ -267,16 +436,21 @@ def _get_graph():
 # ---------------------------------------------------------------------------
 
 def run_inbound(phone: str, name: str, message: Optional[str] = None) -> dict:
-    """Run the inbound scheduling flow for a simulated call.
+    """Run the inbound flow for a simulated call.
 
-    Creates a call record, drives the create_appointment path through the graph,
-    finalizes the call with the accumulated transcript, and returns:
+    Classifies intent + language, routes through the graph, computes post-call
+    intelligence (summary/sentiment), persists everything on the call record,
+    and returns:
 
-        {"call": {...}, "actions": [...], "appointment": {...}|None}
+        {"call", "actions", "appointment"?, "intent", "language",
+         "sentiment", "summary", "escalated", "emergency", "faq_answer"}
     """
-    from app import db  # lazy import
+    from app import db
 
     message = message or "I'd like to book an appointment at the next available time."
+
+    intent = nlu.classify_intent(message)
+    language = nlu.detect_language(message)
 
     call = db.create_call(
         patient_uuid=None,
@@ -289,21 +463,52 @@ def run_inbound(phone: str, name: str, message: Optional[str] = None) -> dict:
         "call_uuid": call_uuid,
         "caller_phone": phone,
         "patient_name": name,
-        "intent": "create_appointment",
+        "intent": intent,
+        "language": language,
         "message": message,
-        "actions": [f"Inbound call started from {phone}"],
+        "escalated": False,
+        "emergency": intent == "emergency",
+        "actions": [
+            f"Inbound call started from {phone}",
+            f"Detected language: {language}",
+            f"Classified intent: {intent}",
+        ],
         "transcript": [{"role": "caller", "text": message}],
     }
 
     final = _get_graph().invoke(init)
+
+    transcript = final.get("transcript", [])
+    summary_text = nlu.summary(transcript)
+    sentiment_val = nlu.sentiment(transcript)
+    escalated = bool(final.get("escalated", False))
+    emergency = bool(final.get("emergency", False))
+    faq_answer = final.get("faq_answer")
 
     updated_call = db.update_call(
         call_uuid,
         patient_uuid=final.get("patient_uuid"),
         status="completed",
         ended=True,
-        transcript=final.get("transcript", []),
+        transcript=transcript,
     )
+
+    # Persist the AI-brain metadata directly on the call hash (non-destructive
+    # extra fields alongside the standard call model).
+    try:
+        r = db.get_redis()
+        r.hset(
+            f"call:{call_uuid}",
+            mapping={
+                "intent": intent,
+                "language": language,
+                "sentiment": sentiment_val,
+                "summary": summary_text,
+                "escalated": "1" if escalated else "0",
+            },
+        )
+    except Exception:
+        pass
 
     appointment = None
     appt_id = final.get("appointment_id")
@@ -312,7 +517,6 @@ def run_inbound(phone: str, name: str, message: Optional[str] = None) -> dict:
             "appointment_id": appt_id,
             "patient_uuid": final.get("patient_uuid"),
         }
-        # Enrich from storage if a getter is available.
         getter = getattr(db, "get_appointment", None)
         if callable(getter):
             try:
@@ -324,30 +528,28 @@ def run_inbound(phone: str, name: str, message: Optional[str] = None) -> dict:
         "call": updated_call or {"call_uuid": call_uuid},
         "actions": final.get("actions", []),
         "appointment": appointment,
+        "intent": intent,
+        "language": language,
+        "sentiment": sentiment_val,
+        "summary": summary_text,
+        "escalated": escalated,
+        "emergency": emergency,
+        "faq_answer": faq_answer,
     }
 
 
 def run_reminders() -> dict:
-    """Run the reminder batch over all upcoming appointments.
-
-    For each upcoming appointment: creates an outbound call, runs the
-    reminder_flow path, records the script in the call transcript, and returns:
-
-        {"results": [{"appointment_id", "script", "call_uuid"}, ...]}
-    """
-    from app import db  # lazy import
+    """Run the reminder batch over all upcoming appointments."""
+    from app import db
 
     upcoming = db.list_upcoming_appointments() or []
     results = []
 
     for appt in upcoming:
-        appt_id = (
-            appt.get("appointment_id") or appt.get("id") or appt.get("uuid")
-        )
+        appt_id = appt.get("appointment_id") or appt.get("id") or appt.get("uuid")
         patient_uuid = appt.get("patient_uuid")
         appt_dt = appt.get("datetime", "your upcoming appointment")
 
-        # Resolve patient name for a friendlier script.
         name = appt.get("patient_name")
         if not name and patient_uuid:
             getter = getattr(db, "get_patient", None)

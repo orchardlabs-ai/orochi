@@ -1,0 +1,111 @@
+.example-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.example-btn {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.75rem 0 1rem;
+}
+
+.sim-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+}
+
+.intent-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: var(--jade-100);
+  color: var(--jade-deep);
+  border: 1px solid var(--jade-200);
+}
+
+.intent-emergency {
+  background: var(--rose-100);
+  color: var(--coral);
+  border-color: var(--rose);
+}
+
+.intent-cancel {
+  background: var(--amber-100);
+  color: #8a5a00;
+  border-color: var(--amber-100);
+}
+
+.intent-hours,
+.intent-insurance,
+.intent-other {
+  background: var(--sky-100);
+  color: #1c5a82;
+  border-color: var(--sky);
+}
+
+.lang-chip {
+  background: var(--sky-100);
+  color: #1c5a82;
+  border-color: var(--sky);
+}
+
+.sentiment-positive {
+  background: var(--jade-100);
+  color: var(--jade-deep);
+  border-color: var(--jade-200);
+}
+
+.sentiment-negative {
+  background: var(--rose-100);
+  color: var(--coral);
+  border-color: var(--rose);
+}
+
+.sentiment-neutral {
+  background: var(--surface-2);
+  color: var(--ink-soft);
+}
+
+.emergency-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.summary-card {
+  border-left: 3px solid var(--jade);
+}
+
+.faq-card {
+  border-left: 3px solid var(--sky);
+}
+
+.summary-text {
+  margin: 0.4rem 0 0;
+  color: var(--ink);
+  line-height: 1.5;
+}

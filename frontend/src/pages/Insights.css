@@ -1,0 +1,117 @@
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.stat-card .stat-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.stat-card .stat-value {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.stat-card .stat-foot {
+  margin-top: 2px;
+}
+
+/* Distribution bars */
+.dist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.dist-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-bottom: 12px;
+}
+
+.dist-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dist-row {
+  display: grid;
+  grid-template-columns: 78px 1fr 68px;
+  align-items: center;
+  gap: 10px;
+}
+
+.dist-label {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.dist-track {
+  height: 12px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.dist-fill {
+  height: 100%;
+  border-radius: 999px;
+  min-width: 2px;
+  transition: width 0.4s var(--ease, ease);
+}
+
+.dist-value {
+  font-size: 0.82rem;
+  text-align: right;
+  color: var(--ink);
+}
+
+.bar-jade { background: var(--jade); }
+.bar-sky { background: var(--sky); }
+.bar-rose { background: var(--rose); }
+.bar-amber { background: var(--amber-100, #e6b800); }
+
+/* Risk pills */
+.risk-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.risk-high {
+  background: var(--rose-100);
+  color: var(--rose);
+}
+
+.risk-medium {
+  background: var(--amber-100);
+  color: #8a6d00;
+}
+
+.risk-low {
+  background: var(--jade-100);
+  color: var(--jade-deep);
+}

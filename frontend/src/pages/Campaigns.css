@@ -1,0 +1,53 @@
+.campaign-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.campaign-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  padding: 1.1rem;
+}
+
+.campaign-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.campaign-card-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.campaign-desc {
+  margin: 0.6rem 0 0.4rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.campaign-sample {
+  margin: 0 0 0.4rem;
+}
+
+.campaign-result {
+  margin: 0.4rem 0 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius-sm);
+  background: var(--jade-100);
+  color: var(--jade-deep);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.campaign-run {
+  margin-top: auto;
+  align-self: flex-start;
+}

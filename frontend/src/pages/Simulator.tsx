@@ -1,17 +1,93 @@
 import { useState, type FormEvent } from 'react';
-import {
-  api,
-  type SimulateInboundResult,
-  type ReminderResult,
-  type TranscriptTurn,
-} from '../api';
+import { api } from '../api';
+import './Simulator.css';
+
+interface TranscriptTurn {
+  role: string;
+  text: string;
+}
+
+interface CallRecord {
+  call_uuid?: string;
+  direction?: string;
+  status?: string;
+  transcript?: TranscriptTurn[];
+}
+
+interface Appointment {
+  appointment_id?: string;
+  datetime?: string;
+  location?: string;
+  status?: string;
+}
+
+interface SimulateInboundResult {
+  call?: CallRecord;
+  actions?: string[];
+  appointment?: Appointment | null;
+  intent?: string;
+  language?: string;
+  sentiment?: string;
+  summary?: string;
+  escalated?: boolean;
+  emergency?: boolean;
+  faq_answer?: string | null;
+}
+
+interface ReminderResult {
+  appointment_id: string;
+  script: string;
+  call_uuid: string;
+}
+
+type Example = {
+  label: string;
+  emoji: string;
+  message: string;
+};
+
+const EXAMPLES: Example[] = [
+  {
+    label: 'Book',
+    emoji: '📅',
+    message: 'Hi, I would like to book a check-up appointment next Tuesday afternoon.',
+  },
+  {
+    label: 'Reschedule',
+    emoji: '🔁',
+    message: 'I need to reschedule my appointment to next Friday morning instead.',
+  },
+  {
+    label: 'Cancel',
+    emoji: '❌',
+    message: "I can't make it anymore — please cancel my appointment.",
+  },
+  {
+    label: 'Hours',
+    emoji: '🕗',
+    message: 'What are your office hours, and are you open on weekends?',
+  },
+  {
+    label: 'Emergency',
+    emoji: '🚨',
+    message: "I knocked out a tooth and it won't stop bleeding, I'm in severe pain!",
+  },
+];
+
+const INTENT_LABELS: Record<string, string> = {
+  book: 'Book',
+  reschedule: 'Reschedule',
+  cancel: 'Cancel',
+  hours: 'Hours',
+  insurance: 'Insurance',
+  emergency: 'Emergency',
+  other: 'General',
+};
 
 export default function Simulator() {
   const [phone, setPhone] = useState('+15551234567');
   const [name, setName] = useState('Jane Doe');
-  const [message, setMessage] = useState(
-    'Hi, I would like to book a check-up appointment next Tuesday afternoon.'
-  );
+  const [message, setMessage] = useState(EXAMPLES[0].message);
 
   const [inboundBusy, setInboundBusy] = useState(false);
   const [reminderBusy, setReminderBusy] = useState(false);
@@ -42,7 +118,9 @@ export default function Simulator() {
     setError('');
     setReminderBusy(true);
     try {
-      const result = await api.post<{ results: ReminderResult[] }>('/api/simulate/reminders');
+      const result = await api.post<{ results: ReminderResult[] }>(
+        '/api/simulate/reminders'
+      );
       setReminders(result.results);
     } catch (err) {
       setError((err as Error).message);
@@ -57,7 +135,8 @@ export default function Simulator() {
         <div>
           <h1>Agent Simulator</h1>
           <p className="page-sub">
-            Drive the LangGraph voice agent offline — no telephony required.
+            Drive the LangGraph voice agent offline — intent routing, triage,
+            multi-language, and post-call intelligence, no telephony required.
           </p>
         </div>
       </header>
@@ -69,6 +148,21 @@ export default function Simulator() {
           <div className="panel-head">
             <h2>📞 Inbound call</h2>
           </div>
+
+          <div className="example-row">
+            {EXAMPLES.map((ex) => (
+              <button
+                type="button"
+                key={ex.label}
+                className="btn btn-ghost example-btn"
+                onClick={() => setMessage(ex.message)}
+                title={ex.message}
+              >
+                <span aria-hidden>{ex.emoji}</span> {ex.label}
+              </button>
+            ))}
+          </div>
+
           <form className="stacked-form" onSubmit={runInbound}>
             <label className="field">
               <span>Caller phone</span>
@@ -101,7 +195,11 @@ export default function Simulator() {
             Runs the reminder flow over all upcoming appointments and generates an
             outbound script for each.
           </p>
-          <button className="btn btn-secondary" onClick={runReminders} disabled={reminderBusy}>
+          <button
+            className="btn btn-secondary"
+            onClick={runReminders}
+            disabled={reminderBusy}
+          >
             {reminderBusy ? 'Running batch…' : 'Run reminder batch'}
           </button>
         </section>
@@ -116,13 +214,61 @@ export default function Simulator() {
             </span>
           </div>
 
+          {inbound.escalated && (
+            <div className="alert alert-error emergency-banner">
+              🚨 <b>Emergency escalated.</b> The caller was connected to the on-call
+              provider — no appointment was booked.
+            </div>
+          )}
+
+          <div className="chip-row">
+            {inbound.intent && (
+              <span className={`intent-badge intent-${inbound.intent}`}>
+                {INTENT_LABELS[inbound.intent] || inbound.intent}
+              </span>
+            )}
+            {inbound.language && (
+              <span className="sim-chip lang-chip">
+                {inbound.language === 'es' ? '🇪🇸 Español' : '🇺🇸 English'}
+              </span>
+            )}
+            {inbound.sentiment && (
+              <span className={`sim-chip sentiment-${inbound.sentiment}`}>
+                {sentimentEmoji(inbound.sentiment)} {cap(inbound.sentiment)}
+              </span>
+            )}
+          </div>
+
+          {inbound.summary && (
+            <div className="result-card summary-card">
+              <div className="result-card-title">📝 Post-call summary</div>
+              <p className="summary-text">{inbound.summary}</p>
+            </div>
+          )}
+
+          {inbound.faq_answer && (
+            <div className="result-card faq-card">
+              <div className="result-card-title">💬 Knowledge base answer</div>
+              <p className="summary-text">{inbound.faq_answer}</p>
+            </div>
+          )}
+
           {inbound.appointment && (
             <div className="result-card result-card-success">
-              <div className="result-card-title">✅ Appointment created</div>
+              <div className="result-card-title">✅ Appointment</div>
               <div className="kv-grid">
-                <div><span>When</span><b>{fmt(inbound.appointment.datetime)}</b></div>
-                <div><span>Location</span><b>{inbound.appointment.location}</b></div>
-                <div><span>Status</span><b>{inbound.appointment.status}</b></div>
+                <div>
+                  <span>When</span>
+                  <b>{fmt(inbound.appointment.datetime)}</b>
+                </div>
+                <div>
+                  <span>Location</span>
+                  <b>{inbound.appointment.location}</b>
+                </div>
+                <div>
+                  <span>Status</span>
+                  <b>{inbound.appointment.status}</b>
+                </div>
               </div>
             </div>
           )}
@@ -197,4 +343,14 @@ function fmt(iso?: string) {
   if (!iso) return '—';
   const d = new Date(iso);
   return isNaN(d.getTime()) ? iso : d.toLocaleString();
+}
+
+function cap(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function sentimentEmoji(s: string) {
+  if (s === 'positive') return '😊';
+  if (s === 'negative') return '😟';
+  return '😐';
 }

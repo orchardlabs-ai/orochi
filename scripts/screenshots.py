@@ -33,7 +33,7 @@ with sync_playwright() as p:
     page.wait_for_timeout(700)
     page.screenshot(path=f"{OUT}/03-schedule.png", full_page=True)
 
-    # Simulator — run an inbound call that snaps 10:37 -> 11:00
+    # Simulator — run an inbound booking that snaps to the nearest open slot
     page.goto(f"{BASE}/simulator", wait_until="networkidle")
     page.wait_for_timeout(400)
     page.get_by_placeholder("What does the caller want?").fill(
@@ -47,6 +47,27 @@ with sync_playwright() as p:
     page.goto(f"{BASE}/appointments", wait_until="networkidle")
     page.wait_for_timeout(700)
     page.screenshot(path=f"{OUT}/05-appointments.png", full_page=True)
+
+    # Simulator — emergency triage/escalation
+    page.goto(f"{BASE}/simulator", wait_until="networkidle")
+    page.wait_for_timeout(400)
+    page.get_by_placeholder("What does the caller want?").fill(
+        "I knocked out a tooth and it won't stop bleeding, I'm in severe pain!"
+    )
+    page.get_by_role("button", name="Simulate inbound call").click()
+    page.wait_for_timeout(1500)
+    page.screenshot(path=f"{OUT}/06-simulator-emergency.png", full_page=True)
+
+    # New feature pages
+    for slug, name in [
+        ("waitlist", "07-waitlist"),
+        ("communications", "08-communications"),
+        ("campaigns", "09-campaigns"),
+        ("insights", "10-insights"),
+    ]:
+        page.goto(f"{BASE}/{slug}", wait_until="networkidle")
+        page.wait_for_timeout(800)
+        page.screenshot(path=f"{OUT}/{name}.png", full_page=True)
 
     browser.close()
     print("done")
