@@ -293,3 +293,68 @@ def get_user(email: str) -> Optional[dict]:
 def user_exists(email: str) -> bool:
     r = get_redis()
     return bool(r.exists(f"user:{email}"))
+
+
+# ---------------------------------------------------------------------------
+# Schedule availability (weekly recurring template)
+# ---------------------------------------------------------------------------
+# Stored as a Redis set "schedule:availability" whose members are
+# "{weekday}:{HH:MM}" (e.g. "mon:09:30") for every slot open for bookings.
+_AVAILABILITY_KEY = "schedule:availability"
+
+
+def get_availability() -> dict:
+    """Return the weekly template as {weekday: [sorted HH:MM, ...]}."""
+    from .scheduling import WEEKDAYS
+
+    r = get_redis()
+    result = {day: [] for day in WEEKDAYS}
+    for member in r.smembers(_AVAILABILITY_KEY):
+        weekday, _, time = member.partition(":")
+        if weekday in result:
+            result[weekday].append(time)
+    for day in result:
+        result[day].sort()
+    return result
+
+
+def is_slot_available(weekday: str, time: str) -> bool:
+    r = get_redis()
+    return bool(r.sismember(_AVAILABILITY_KEY, f"{weekday}:{time}"))
+
+
+def set_slot_availability(weekday: str, time: str, available: bool) -> dict:
+    r = get_redis()
+    member = f"{weekday}:{time}"
+    if available:
+        r.sadd(_AVAILABILITY_KEY, member)
+    else:
+        r.srem(_AVAILABILITY_KEY, member)
+    return get_availability()
+
+
+def set_day_availability(weekday: str, available: bool) -> dict:
+    """Toggle an entire weekday column across all slot times."""
+    from .scheduling import slot_times
+
+    r = get_redis()
+    members = [f"{weekday}:{t}" for t in slot_times()]
+    if available:
+        r.sadd(_AVAILABILITY_KEY, *members)
+    else:
+        r.srem(_AVAILABILITY_KEY, *members)
+    return get_availability()
+
+
+def availability_is_empty() -> bool:
+    r = get_redis()
+    return r.scard(_AVAILABILITY_KEY) == 0
+
+
+def booked_slot_datetimes() -> set:
+    """Datetimes ("YYYY-MM-DDThh:mm") of active (non-cancelled) appointments."""
+    return {
+        appt["datetime"]
+        for appt in list_appointments()
+        if appt.get("datetime") and appt.get("status") != "cancelled"
+    }

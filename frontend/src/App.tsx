@@ -3,6 +3,7 @@ import { RequireAuth } from './auth';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Schedule from './pages/Schedule';
 import Patients from './pages/Patients';
 import Appointments from './pages/Appointments';
 import Calls from './pages/Calls';
@@ -20,6 +21,7 @@ export default function App() {
         }
       >
         <Route path="/" element={<Dashboard />} />
+        <Route path="/schedule" element={<Schedule />} />
         <Route path="/patients" element={<Patients />} />
         <Route path="/appointments" element={<Appointments />} />
         <Route path="/calls" element={<Calls />} />

@@ -117,7 +117,7 @@ export default function Simulator() {
           </div>
 
           {inbound.appointment && (
-            <div className="result-card highlight">
+            <div className="result-card result-card-success">
               <div className="result-card-title">✅ Appointment created</div>
               <div className="kv-grid">
                 <div><span>When</span><b>{fmt(inbound.appointment.datetime)}</b></div>

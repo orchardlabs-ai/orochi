@@ -55,6 +55,18 @@ def _combine_datetime(date: str, time: str) -> str:
     return f"{date}T{time}" if time else date
 
 
+def _format_spoken(date_str: str, time_str: str) -> str:
+    """Human-friendly time for the patient-facing transcript, e.g.
+    "Tuesday, July 09 at 11:00 AM". Never exposes slot mechanics."""
+    try:
+        dt = datetime.strptime(f"{date_str}T{time_str}", "%Y-%m-%dT%H:%M")
+    except (ValueError, TypeError):
+        return f"{date_str} at {time_str}"
+    hour = dt.hour % 12 or 12
+    meridiem = "AM" if dt.hour < 12 else "PM"
+    return f"{dt.strftime('%A, %B %d')} at {hour}:{dt.minute:02d} {meridiem}"
+
+
 # ---------------------------------------------------------------------------
 # Nodes
 # ---------------------------------------------------------------------------
@@ -108,29 +120,56 @@ def collect_appointment_details(state: CallState) -> CallState:
     raw = kimi_chat(llm_messages)
     details = parse_appointment_json(raw)
 
+    from app import scheduling  # lazy import — shares slot rules with the router
+
     date = details.get("date", "next available")
     time = details.get("time", "09:00")
     location = details.get("location", "Main Clinic")
-    appt_dt = _combine_datetime(date, time)
 
-    transcript.append({"role": "caller", "text": message})
+    # The caller's opening message is already seeded into the transcript by
+    # run_inbound; don't append it again here.
     actions.append(f"LLM extracted appointment details: {json.dumps(details)}")
 
-    appointment = db.create_appointment(
-        state.get("patient_uuid"), appt_dt, location
-    )
+    # Snap the request to the nearest available, unbooked 45-minute slot. Slots
+    # are an internal concept — the caller only ever hears the confirmed time.
+    slot = scheduling.next_available_slot(date, time)
+    requested = _combine_datetime(date, time)
+
+    if slot is None:
+        actions.append(
+            f"No available slot within the booking horizon for request "
+            f"'{requested}' — nothing booked."
+        )
+        transcript.append({
+            "role": "agent",
+            "text": (
+                "I'm sorry, we don't have any openings coming up. "
+                "Please call back and we'll find you a time."
+            ),
+        })
+        return {**state, "actions": actions, "transcript": transcript}
+
+    slot_date, slot_time = slot
+    appt_dt = f"{slot_date}T{slot_time}"
+    if appt_dt != requested:
+        actions.append(
+            f"Requested '{requested}' → offered nearest available slot {appt_dt}"
+        )
+
+    appointment = db.create_appointment(state.get("patient_uuid"), appt_dt, location)
     appointment_id = (
         appointment.get("appointment_id")
         or appointment.get("id")
         or appointment.get("uuid")
     )
 
+    spoken_when = _format_spoken(slot_date, slot_time)
     actions.append(
         f"Created appointment {appointment_id} for {appt_dt} at {location}"
     )
     transcript.append({
         "role": "agent",
-        "text": f"You're booked for {appt_dt} at {location}. See you then!",
+        "text": f"You're booked for {spoken_when} at {location}. See you then!",
     })
 
     return {

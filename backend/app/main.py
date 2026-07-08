@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routers import appointments, auth, calls, patients, simulator
+from .routers import appointments, auth, calls, patients, schedule, simulator
 from .seed import seed
 
 app = FastAPI(title="Orochi", description="HIPAA-conscious clinic voice-agent prototype")
@@ -30,4 +30,5 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(patients.router, prefix="/api")
 app.include_router(appointments.router, prefix="/api")
 app.include_router(calls.router, prefix="/api")
+app.include_router(schedule.router, prefix="/api")
 app.include_router(simulator.router, prefix="/api")

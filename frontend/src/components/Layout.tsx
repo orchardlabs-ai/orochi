@@ -3,6 +3,7 @@ import { useAuth } from '../auth';
 
 const nav = [
   { to: '/', label: 'Dashboard', icon: '◍', end: true },
+  { to: '/schedule', label: 'Schedule', icon: '▦' },
   { to: '/patients', label: 'Patients', icon: '❑' },
   { to: '/appointments', label: 'Appointments', icon: '❖' },
   { to: '/calls', label: 'Calls', icon: '◈' },

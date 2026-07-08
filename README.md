@@ -23,6 +23,18 @@ The whole system **runs fully offline by default**:
 > `02 - Data & Integrations`, and `03 - Flows` for the full PRD, data model, and
 > flow diagrams.
 
+## Screenshots
+
+A tour of the UI (full gallery in **[`docs/screenshots/`](./docs/screenshots/)**):
+
+| Login | Dashboard | Schedule |
+|-------|-----------|----------|
+| ![Login](docs/screenshots/01-login.png) | ![Dashboard](docs/screenshots/02-dashboard.png) | ![Schedule](docs/screenshots/03-schedule.png) |
+
+The **Schedule** tab lets clinic staff mark a weekly template of available 45-minute
+slots; the agent snaps every booking request to the nearest open, unbooked slot
+(never revealing slot boundaries to the patient).
+
 ---
 
 ## Architecture

@@ -89,3 +89,12 @@ export interface ReminderResult {
   script: string;
   call_uuid: string;
 }
+
+export interface ScheduleData {
+  open: string;
+  close: string;
+  slot_minutes: number;
+  weekdays: string[];
+  slots: string[];
+  availability: Record<string, string[]>;
+}
