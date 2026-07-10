@@ -14,6 +14,7 @@ import Campaigns from './pages/Campaigns';
 import Escalations from './pages/Escalations';
 import Insurance from './pages/Insurance';
 import Calls from './pages/Calls';
+import Transcripts from './pages/Transcripts';
 import Insights from './pages/Insights';
 import Simulator from './pages/Simulator';
 import Demo from './pages/Demo';
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/campaigns" element={<Campaigns />} />
         <Route path="/insurance" element={<Insurance />} />
         <Route path="/calls" element={<Calls />} />
+        <Route path="/transcripts" element={<Transcripts />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/simulator" element={<Simulator />} />
         <Route path="/demo" element={<Demo />} />

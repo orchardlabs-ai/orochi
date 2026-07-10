@@ -245,10 +245,12 @@ def create_call(
     direction: str,
     status: str = "in_progress",
     transcript: Optional[list] = None,
+    judgment: Optional[dict] = None,
+    started_at: Optional[str] = None,
 ) -> dict:
     r = get_redis()
     call_uuid = str(uuid.uuid4())
-    started_at = _now()
+    started_at = started_at or _now()
     r.hset(
         f"call:{call_uuid}",
         mapping={
@@ -258,6 +260,7 @@ def create_call(
             "started_at": started_at,
             "ended_at": "",
             "transcript": json.dumps(transcript or []),
+            "judgment": json.dumps(judgment) if judgment else "",
         },
     )
     r.sadd("calls", call_uuid)
@@ -270,6 +273,8 @@ def update_call(
     transcript: Optional[list] = None,
     ended: bool = False,
     patient_uuid: Optional[str] = None,
+    judgment: Optional[dict] = None,
+    ended_at: Optional[str] = None,
 ) -> Optional[dict]:
     r = get_redis()
     if not r.exists(f"call:{call_uuid}"):
@@ -285,8 +290,10 @@ def update_call(
             mapping["transcript"] = transcript
         else:
             mapping["transcript"] = json.dumps(transcript)
+    if judgment is not None:
+        mapping["judgment"] = json.dumps(judgment)
     if ended:
-        mapping["ended_at"] = _now()
+        mapping["ended_at"] = ended_at or _now()
     if mapping:
         r.hset(f"call:{call_uuid}", mapping=mapping)
     return get_call(call_uuid)
@@ -301,6 +308,10 @@ def get_call(call_uuid: str) -> Optional[dict]:
         transcript = json.loads(data.get("transcript") or "[]")
     except (ValueError, TypeError):
         transcript = []
+    try:
+        judgment = json.loads(data.get("judgment") or "null")
+    except (ValueError, TypeError):
+        judgment = None
     return {
         "call_uuid": call_uuid,
         "patient_uuid": data.get("patient_uuid") or None,
@@ -309,6 +320,7 @@ def get_call(call_uuid: str) -> Optional[dict]:
         "started_at": data.get("started_at"),
         "ended_at": data.get("ended_at") or None,
         "transcript": transcript,
+        "judgment": judgment,
     }
 
 

@@ -16,6 +16,7 @@ from .routers import (
     reminders,
     schedule,
     simulator,
+    transcripts,
     waitlist,
 )
 from .seed import seed
@@ -55,3 +56,4 @@ app.include_router(escalations.router, prefix="/api")
 app.include_router(reminders.router, prefix="/api")
 app.include_router(insurance.router, prefix="/api")
 app.include_router(simulator.router, prefix="/api")
+app.include_router(transcripts.router, prefix="/api")

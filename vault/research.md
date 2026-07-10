@@ -405,3 +405,7 @@ Here's the full report on dental office booking and calling platforms. It covers
 **Outbound calling leaders:** Solutionreach (400+ PMS integrations, deep recall automation), Annie (persistent recare outbound for silent churn), HeyGent (AI-powered hygiene/inactive patient recall), and healow Genie (Conversational Smart Campaigns). [researchandmarkets](https://www.researchandmarkets.com/reports/5954780/dental-practice-management-software-market-report)
 
 **If you're building or evaluating platforms for this space**, the API/developer layer is worth noting: NexHealth Synchronizer, CRMBridge.ai (27+ PMS connections), and Synchronizer.io are the integration middleware options for programmatic access to dental PMS data. [investors.getweave](https://investors.getweave.com/news/news-details/2025/Weave-Supports-Henry-Schein-One-API-Exchange-as-an-Authorized-Integration-Vendor-08-26-2025/default.aspx)
+
+## Related
+
+- [[Synthetic Transcript Generation Research]] — follow-up research specifically on generating realistic synthetic dental call transcripts for AI judging (disfluencies, multi-stage generation, dialog acts, compliance patterns), which fed the [[Transcripts]] demo feature.

@@ -22,6 +22,7 @@ updated: 2026-07-08
 > - **Messages** — mock Twilio SMS/email/voice + **two-way confirmation**
 > - **Waitlist / ASAP backfill** · **Outbound campaigns** (recall / reactivation / missed-call recovery)
 > - **Insights** — call analytics, booking conversion, **no-show risk** scoring
+> - **[[Transcripts]]** — batch AI judging of call transcripts: receptionist coaching, business-owner insights, compliance flags, quality score ([[Synthetic Transcript Generation Research]])
 > - Auth, dashboard, patients, appointments, calls, agent simulator
 
 ## Next — deepen realism (still mockable)

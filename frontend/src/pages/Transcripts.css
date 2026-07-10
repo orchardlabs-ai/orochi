@@ -1,0 +1,160 @@
+.theme-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.theme-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+}
+
+.theme-text {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.theme-count {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.row-clickable { cursor: pointer; }
+.row-clickable:hover { background: var(--surface-2); }
+
+.quality-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.quality-good { background: var(--jade-100); color: var(--jade-deep); }
+.quality-ok { background: var(--amber-100); color: #8a6d00; }
+.quality-poor { background: var(--rose-100); color: var(--rose); }
+
+.flag-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--rose-100);
+  color: var(--rose);
+}
+
+/* Drilldown */
+.transcript-detail { margin-top: 22px; }
+
+.transcript-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.transcript-turns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 640px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.turn {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  max-width: 88%;
+}
+
+.turn-caller {
+  background: var(--surface-2);
+  align-self: flex-start;
+}
+
+.turn-agent {
+  background: var(--sky-100);
+  align-self: flex-end;
+  margin-left: auto;
+}
+
+.turn-role {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.turn-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.transcript-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: sticky;
+  top: 0;
+}
+
+.summary-block {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+.summary-block h4 {
+  font-size: 0.85rem;
+  margin: 0 0 10px;
+  color: var(--ink-soft);
+}
+
+.summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 0.88rem;
+}
+
+.note-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.coaching-list li { color: var(--ink-soft); }
+
+.flag-list li { color: var(--rose); }
+
+@media (max-width: 900px) {
+  .transcript-layout {
+    grid-template-columns: 1fr;
+  }
+  .transcript-summary {
+    position: static;
+  }
+}

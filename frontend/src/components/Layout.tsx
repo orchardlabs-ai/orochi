@@ -27,6 +27,7 @@ const groups: NavItem[][] = [
   ],
   [
     { to: '/calls', label: 'Calls', icon: '◈' },
+    { to: '/transcripts', label: 'Transcripts', icon: '☲' },
     { to: '/insights', label: 'Insights', icon: '◑' },
   ],
   [

@@ -90,6 +90,56 @@ export interface ReminderResult {
   call_uuid: string;
 }
 
+export interface TranscriptListItem {
+  call_uuid: string;
+  started_at: string;
+  patient_name: string | null;
+  direction: 'inbound' | 'outbound';
+  quality_score: number | null;
+  has_compliance_flags: boolean;
+  booked: boolean;
+}
+
+export interface TranscriptJudgment {
+  receptionist_coaching: string[];
+  business_owner_insights: string[];
+  compliance_flags: string[];
+  quality_score: number | null;
+  booked: boolean;
+}
+
+export interface TranscriptDetail {
+  call_uuid: string;
+  patient_uuid: string | null;
+  patient_name: string | null;
+  direction: 'inbound' | 'outbound';
+  status: string;
+  started_at: string;
+  ended_at: string | null;
+  transcript: TranscriptTurn[];
+  judgment: TranscriptJudgment;
+}
+
+export interface TranscriptsOverview {
+  total_calls_analyzed: number;
+  compliance_flagged_count: number;
+  average_quality_score: number | null;
+  top_business_owner_insights: { theme: string; count: number }[];
+  top_coaching_themes: { theme: string; count: number }[];
+}
+
+export function getTranscripts() {
+  return api.get<TranscriptListItem[]>('/api/transcripts');
+}
+
+export function getTranscript(callUuid: string) {
+  return api.get<TranscriptDetail>(`/api/transcripts/${callUuid}`);
+}
+
+export function getTranscriptsOverview() {
+  return api.get<TranscriptsOverview>('/api/transcripts/overview');
+}
+
 export interface ScheduleData {
   open: string;
   close: string;
