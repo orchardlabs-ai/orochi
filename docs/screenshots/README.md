@@ -20,5 +20,7 @@ Captured from the running app (`http://localhost:5173`) with seeded demo data.
 | **Insurance** — mock eligibility verification | ![Insurance](14-insurance.png) |
 | **Guided demo** — scripted product walkthrough | ![Guided demo](15-guided-demo.png) |
 | **Dark mode** — theme-aware dashboard | ![Dark mode](16-dark-dashboard.png) |
+| **Transcripts** — batch AI call judging: coaching, insights, compliance flags | ![Transcripts](17-transcripts.png) |
+| **Transcripts (detail)** — per-call drill-down with turn-by-turn annotations | ![Transcripts detail](18-transcripts-detail.png) |
 
 > Regenerate with `python3 scripts/screenshots.py` (drives headless Chrome via Playwright against the running dev servers).

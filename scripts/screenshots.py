@@ -81,5 +81,16 @@ with sync_playwright() as p:
     dark.wait_for_timeout(900)
     dark.screenshot(path=f"{OUT}/16-dark-dashboard.png", full_page=True)
 
+    # Transcripts — batch overview
+    page.goto(f"{BASE}/transcripts", wait_until="networkidle")
+    page.wait_for_timeout(800)
+    page.screenshot(path=f"{OUT}/17-transcripts.png", full_page=True)
+
+    # Transcripts — per-call drill-down (last row = oldest = one of the 25
+    # seeded transcripts, not a just-created Simulator test call)
+    page.get_by_role("row").nth(-1).click()
+    page.wait_for_timeout(600)
+    page.screenshot(path=f"{OUT}/18-transcripts-detail.png", full_page=True)
+
     browser.close()
     print("done")
