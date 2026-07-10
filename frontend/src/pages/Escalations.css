@@ -1,3 +1,7 @@
+.esc-transcripts-link {
+  margin: -0.4rem 0 1rem;
+}
+
 .esc-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);

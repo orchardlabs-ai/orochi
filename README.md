@@ -53,7 +53,7 @@ slots; the agent snaps every booking request to the nearest open, unbooked slot
   `itsdangerous`. All non-auth `/api` routes require a valid session (`401` otherwise).
 - **REST API** — everything is under `/api` (JSON). Highlights:
   `/api/auth/{login,logout,me}`, `/api/patients`, `/api/appointments`,
-  `/api/calls`, `/api/simulate/inbound`, `/api/simulate/reminders`, `/api/health`.
+  `/api/calls`, `/api/transcripts`, `/api/simulate/inbound`, `/api/simulate/reminders`, `/api/health`.
 - **Agent** — `CallState` (a `TypedDict`) flows through LangGraph nodes.
   Routing uses `add_conditional_edges` on `intent`:
   `create_appointment` → `identify_patient` → `collect_appointment_details` → END;

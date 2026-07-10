@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api';
 import CallPop from '../components/CallPop';
 import './Escalations.css';
@@ -64,6 +65,11 @@ export default function Escalations() {
         </div>
         <span className="count-pill">{open.length} open</span>
       </header>
+
+      <p className="page-sub esc-transcripts-link">
+        Reviewing an escalated call? See AI coaching notes and compliance flags in{' '}
+        <Link to="/transcripts">Transcripts →</Link>
+      </p>
 
       {error && <div className="alert alert-error">{error}</div>}
 

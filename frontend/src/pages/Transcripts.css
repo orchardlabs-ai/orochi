@@ -44,6 +44,69 @@
 .quality-ok { background: var(--amber-100); color: #8a6d00; }
 .quality-poor { background: var(--rose-100); color: var(--rose); }
 
+.quality-pending {
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px dashed var(--line);
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+
+.filter-input {
+  flex: 1 1 220px;
+  min-width: 160px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.85rem;
+}
+
+.filter-select {
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.85rem;
+}
+
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.export-btn {
+  margin-left: auto;
+}
+
+.trend-up { color: var(--jade-deep); }
+.trend-down { color: var(--rose); }
+
+.pending-block {
+  border-color: var(--line);
+}
+
+.pending-summary {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
 .flag-pill {
   display: inline-block;
   padding: 3px 10px;

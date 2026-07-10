@@ -95,6 +95,7 @@ export interface TranscriptListItem {
   started_at: string;
   patient_name: string | null;
   direction: 'inbound' | 'outbound';
+  analyzed: boolean;
   quality_score: number | null;
   has_compliance_flags: boolean;
   booked: boolean;
@@ -106,6 +107,7 @@ export interface TranscriptJudgment {
   compliance_flags: string[];
   quality_score: number | null;
   booked: boolean;
+  summary?: string;
 }
 
 export interface TranscriptDetail {
@@ -117,7 +119,13 @@ export interface TranscriptDetail {
   started_at: string;
   ended_at: string | null;
   transcript: TranscriptTurn[];
+  analyzed: boolean;
   judgment: TranscriptJudgment;
+}
+
+export interface TranscriptsOverviewBucket {
+  count: number;
+  average_quality_score: number | null;
 }
 
 export interface TranscriptsOverview {
@@ -126,6 +134,8 @@ export interface TranscriptsOverview {
   average_quality_score: number | null;
   top_business_owner_insights: { theme: string; count: number }[];
   top_coaching_themes: { theme: string; count: number }[];
+  this_week: TranscriptsOverviewBucket;
+  prior_week: TranscriptsOverviewBucket;
 }
 
 export function getTranscripts() {

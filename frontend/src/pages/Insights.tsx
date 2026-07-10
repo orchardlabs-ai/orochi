@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api';
+import { getTranscriptsOverview } from '../api';
 import './Insights.css';
 
 type Overview = {
@@ -65,6 +67,7 @@ export default function Insights() {
   const [risk, setRisk] = useState<RiskRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [complianceFlagged, setComplianceFlagged] = useState<number | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -78,6 +81,10 @@ export default function Insights() {
       })
       .catch((e) => setError((e as Error).message))
       .finally(() => setLoading(false));
+
+    getTranscriptsOverview()
+      .then((t) => setComplianceFlagged(t.compliance_flagged_count))
+      .catch(() => {});
   };
 
   useEffect(load, []);
@@ -128,6 +135,13 @@ export default function Insights() {
                   {ov.by_status.scheduled} awaiting confirm
                 </span>
               </div>
+              {complianceFlagged !== null && (
+                <Link to="/transcripts" className="stat-card stat-card-link">
+                  <span className="stat-label">Compliance review</span>
+                  <span className="stat-value">{complianceFlagged}</span>
+                  <span className="stat-foot muted small">flagged calls · see Transcripts →</span>
+                </Link>
+              )}
             </div>
 
             <section className="panel">
